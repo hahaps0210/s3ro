@@ -6,7 +6,7 @@
 
 - **ObjectStore 抽象**：`pkg/objectstore` 定义了 RemoteFS 需要的最小接口（`Head`、`List`、`Download`）。仓库包含基于 AWS SDK v2 的 S3 实现（`NewS3Store`），也可以实现新的 object store 并注入。
 - **受限磁盘缓存**：`pkg/cache` 暴露一个有硬性容量上限的磁盘 LRU 缓存。文件内容首次读取时写入缓存，后续直接命中，超出配额会自动淘汰。
-- **RemoteFS 门面**：`pkg/remotefs` 负责把传入的本地路径转换为对象存储 key，公开 `ReadFile`、`ReadDir`、`Stat` 等接口。它在 daemon 启动时会调用 `WarmMetadataCache` 遍历远端目录，缓存元数据后，后续单文件 `stat` 可以直接命中本地缓存，减少 RPC。
+- **RemoteFS 接口**：`pkg/remotefs` 负责把传入的本地路径转换为对象存储 key，公开 `ReadFile`、`ReadDir`、`Stat` 等接口。它在 daemon 启动时会调用 `WarmMetadataCache` 遍历远端目录，缓存元数据后，后续单文件 `stat` 可以直接命中本地缓存，减少 RPC。
 - **CLI 集成测试工具**：`cmd/remotefs-cli` 提供 `stat`、`ls`、`cat` 命令以及 `serve` 子命令，方便在没有 daemon 的情况下验证 IPC API。
 - **IPC 守护进程**：`cmd/remotefs-daemon` 通过 Unix Socket 或本地 TCP 暴露 `/stat`、`/ls`、`/cat` HTTP 接口，始终返回固定的 UID/GID 和 `0550/0440` 权限，保证 `ls -la` 类工具展示一致。
 - **LD_PRELOAD Shim**：`shim/ldpreload` 提供可注入的共享库，拦截 `open`/`stat` 等系统调用，并把请求代理到 daemon，实现对旧程序的透明兼容。
